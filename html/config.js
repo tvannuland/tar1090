@@ -242,3 +242,13 @@ HideCols = [
 //lastLeg = true;
 //
 //hideButtons = false;
+
+//These are the options to show max range plot
+ShowMaxRange         = true ;  // https://github.com/alkissack/Dump1090-OpenLayers3-html/wiki/8.-Maximum-range-plot
+			       // If showing ranges, set SiteLat/SiteLon as these are the zero range positions till plot is drawn
+MinRangeHeight	     =    -1 ; // ft - inner range ring - Set -1 to disable
+MinRangeLikely 	     =   170 ; // nm - practical max (to supress spikes from bad data)
+MidRangeHeight	     =    -1 ; // ft - mid range ring - Set -1 to disable
+MidRangeLikely 	     =   220 ; // nm - practical max
+MaxRangeLikely 	     =   300 ; // nm - practical max
+RangeLine	  			   =     1 ; // Line width for range rings
