@@ -95,6 +95,18 @@ let bgFill = null;
 let legSel = -1;
 let geoMag = null;
 
+// Define Max Range Plot feature stuff (TvN). Mostly copied from Alkissack's OpenLayers implementation
+var MaxRangeFeatures      = new ol.Collection();	// MAX Range Plot feature
+var MaxRngRange = [];
+var MaxRngLat   = [];
+var MaxRngLon   = [];
+var MidRngRange = [];
+var MidRngLat   = [];
+var MidRngLon   = [];
+var MinRngRange = [];
+var MinRngLat   = [];
+var MinRngLon   = [];
+
 let shareLink = '';
 
 let onMobile = false;
@@ -726,6 +738,43 @@ function initialize() {
         });
     }
 
+    // Range plot - Now able to read from local storage if available
+    if (localStorage.getItem('MaxRngLon') && localStorage.getItem('MaxRngLat') && localStorage.getItem('MaxRngRange')) {
+        //console.log("Loading max range");
+        MaxRngLat = JSON.parse(localStorage.getItem('MaxRngLat'));
+        MaxRngLon = JSON.parse(localStorage.getItem('MaxRngLon'));
+        MaxRngRange = JSON.parse(localStorage.getItem('MaxRngRange'));
+    } else {
+        for (var j = 0; j <= 360; j++) {
+            MaxRngRange[j] = 0;
+            MaxRngLat[j] = SiteLat;
+            MaxRngLon[j] = SiteLon;
+        }
+    }
+    if (localStorage.getItem('MidRngLon') && localStorage.getItem('MidRngLat') && localStorage.getItem('MidRngRange')) {
+        //console.log("Loading mid range");
+        MidRngLat = JSON.parse(localStorage.getItem('MidRngLat'));
+        MidRngLon = JSON.parse(localStorage.getItem('MidRngLon'));
+        MidRngRange = JSON.parse(localStorage.getItem('MidRngRange'));
+    } else {
+        for (var j = 0; j <= 360; j++) {
+            MidRngRange[j] = 0;
+            MidRngLat[j] = SiteLat;
+            MidRngLon[j] = SiteLon;
+        }
+    }
+    if (localStorage.getItem('MinRngLon') && localStorage.getItem('MinRngLat') && localStorage.getItem('MinRngRange')) {
+        //console.log("Loading min range");
+        MinRngLat = JSON.parse(localStorage.getItem('MinRngLat'));
+        MinRngLon = JSON.parse(localStorage.getItem('MinRngLon'));
+        MinRngRange = JSON.parse(localStorage.getItem('MinRngRange'));
+    } else {
+        for (var j = 0; j <= 360; j++) {
+            MinRngRange[j] = 0;
+            MinRngLat[j] = SiteLat;
+            MinRngLon[j] = SiteLon;
+        }
+    }
 }
 
 function init_page() {
@@ -1261,6 +1310,19 @@ function initialize_map() {
         //renderOrder: null,
     });
 
+    if (ShowMaxRange) {    // Maximum Range Plot
+        var maxRangeLayer = new ol.layer.Vector({
+            name: 'ranges',
+            type: 'overlay',
+            title: 'Range Plot',
+            source: new ol.source.Vector({
+                features: MaxRangeFeatures,
+            })
+        });
+    } else {
+        var maxRangeLayer = new ol.layer.Vector({});
+    };
+
     layers.push(
         new ol.layer.Vector({
             name: 'site_pos',
@@ -1281,6 +1343,8 @@ function initialize_map() {
     });
 
     layers.push(trailLayers);
+
+    layers.push(maxRangeLayer);
 
     layers.push(iconLayer);
 
@@ -1607,6 +1671,86 @@ function initialize_map() {
         initSitePos();
     }
 
+	// Read the stored maximum range (lat/long) from my mySql database and then plot these
+	// as a polygon.  This will be update as positions are logged and will therefore become more 
+	// accurate, although rouge spikes will need to be manually removed from the database
+	// Expanded to include the 2 other rings too, if required
+
+	var polyCoordsMax = [];
+	var polyCoordsMid = [];
+	var polyCoordsMin = [];
+
+
+	$(function ()
+  	{
+    	   $.ajax({
+      	       url: 'sql/sql-best-ranges.php',
+    	       data: "",
+   	       dataType: 'json',
+    	       success: function(data)  {processMrData(data)}
+       	    });
+	});
+
+	function processMrData(allRData) {
+
+	    for ( var i in allRData ) {
+	        var oneRPoint = allRData[i] ;
+		polyCoordsMax.push(ol.proj.transform([parseFloat(oneRPoint[9]), parseFloat(oneRPoint[8])],  'EPSG:4326', 'EPSG:3857'));
+		polyCoordsMid.push(ol.proj.transform([parseFloat(oneRPoint[6]), parseFloat(oneRPoint[5])], 'EPSG:4326', 'EPSG:3857'));
+		polyCoordsMin.push(ol.proj.transform([parseFloat(oneRPoint[3]), parseFloat(oneRPoint[2])],  'EPSG:4326', 'EPSG:3857'));
+	    };
+		
+	    var styleMax = new ol.style.Style({
+            	stroke: new ol.style.Stroke({
+               		color: 'rgba(0,0,255, 1)',
+               		width: 0.5
+            	}),
+	    	fill: new ol.style.Fill({
+	        	color: 'rgba(0,0,255, 0.01)'
+	    	})
+	    })
+	    var rfeatureMax = new ol.Feature({
+    		geometry: new ol.geom.Polygon([polyCoordsMax])
+	    });
+	    rfeatureMax.setStyle(styleMax)
+	    SleafordRangeFeatures.push(rfeatureMax);
+
+	    if (MidRangeHeight > 0) {
+	    	var styleMid = new ol.style.Style({
+            		stroke: new ol.style.Stroke({
+            	   		color: 'rgba(0,64,0, 1)',
+            	   		width: 0.5
+            		}),
+	    		fill: new ol.style.Fill({
+	    	    	color: 'rgba(0,255,0, 0.01)'
+	    		})
+	    	})
+
+	    	var rfeatureMid = new ol.Feature({
+    			geometry: new ol.geom.Polygon([polyCoordsMid])
+	    	});
+	    	rfeatureMid.setStyle(styleMid)
+	   	SleafordRangeFeatures.push(rfeatureMid);
+	    }
+
+	    if (MinRangeHeight > 0) {
+	    	var styleMin = new ol.style.Style({
+            		stroke: new ol.style.Stroke({
+            	   		color: 'rgba(64,0,0, 1)',
+            	   		width: 0.5
+            		}),
+	    		fill: new ol.style.Fill({
+	    	    	color: 'rgba(255,0,0, 0.01)'
+	    		})
+	    	})
+
+	    	var rfeatureMin = new ol.Feature({
+    			geometry: new ol.geom.Polygon([polyCoordsMin])
+	    	});
+	    	rfeatureMin.setStyle(styleMin)
+	    	SleafordRangeFeatures.push(rfeatureMin);
+	    }
+	}
 }
 
 // This looks for planes to reap out of the master Planes letiable
@@ -2024,6 +2168,73 @@ function refreshSelected() {
     }
 
     setSelectedInfoBlockVisibility();
+
+    // Range Plot
+	MaxRangeFeatures.clear();
+
+	// MAXIMUM ------------------------------------
+	var style = new ol.style.Style({
+	    stroke: new ol.style.Stroke({
+	        color: 'rgba(0,0,128, 1)',
+	        width: RangeLine
+	    }),
+	    fill: new ol.style.Fill({
+	        color: 'rgba(0,0,255, 0.05)'
+	    })
+	});
+
+	var polyCoords = [];
+	for (var i=0; i < 360; i++) {
+		polyCoords.push(ol.proj.transform([MaxRngLon[i], MaxRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+	}
+	var rangeFeature = new ol.Feature({
+	    geometry: new ol.geom.Polygon([polyCoords])
+
+	})
+	rangeFeature.setStyle(style)
+	if(ShowMaxRange) {MaxRangeFeatures.push(rangeFeature)};
+
+	// MEDIUM ------------------------------------
+	var style = new ol.style.Style({
+	    stroke: new ol.style.Stroke({
+	        color: 'rgba(0,128,0, 0.5)',
+	        width: RangeLine
+	    }),
+	    fill: new ol.style.Fill({
+	        color: 'rgba(0,255,0, 0.05)'
+	    })
+	});
+	var polyCoords = [];
+	for (var i=0; i < 360; i++) {
+		polyCoords.push(ol.proj.transform([MidRngLon[i], MidRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+	}
+	var rangeFeature = new ol.Feature({
+	    geometry: new ol.geom.Polygon([polyCoords])
+
+	})
+	rangeFeature.setStyle(style)
+	if (MidRangeHeight > 0) {MaxRangeFeatures.push(rangeFeature)}; // Medium range
+
+	// MINIMUM ------------------------------------
+	var style = new ol.style.Style({
+	    stroke: new ol.style.Stroke({
+	        color: 'rgba(128,0,0, 0.5)',
+	        width: RangeLine
+	    }),
+	    fill: new ol.style.Fill({
+	        color: 'rgba(255,0,0, 0.05)'
+	    })
+	});
+	var polyCoords = [];
+	for (var i=0; i < 360; i++) {
+		polyCoords.push(ol.proj.transform([MinRngLon[i], MinRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+	}
+	var rangeFeature = new ol.Feature({
+	    geometry: new ol.geom.Polygon([polyCoords])
+
+	})
+	rangeFeature.setStyle(style)
+	if (MinRangeHeight>0) {MaxRangeFeatures.push(rangeFeature);} // Minimum range
 }
 
 function refreshHighlighted() {
@@ -2675,6 +2886,20 @@ function resetMap() {
     $("#update_error").css('display','none');
 }
 
+function resetRangePlot() {
+    for (var j = 0; j < 360; j++) {
+	MaxRngRange[j] = 0;
+	MaxRngLat[j]   = SiteLat ;   
+	MaxRngLon[j]   = SiteLon ;
+	MidRngRange[j] = MaxRngRange[j]
+	MidRngLat[j]   = MaxRngLat[j]
+	MidRngLon[j]   = MaxRngLon[j]
+	MinRngRange[j] = MaxRngRange[j]
+	MinRngLat[j]   = MaxRngLat[j]
+	MinRngLon[j]   = MaxRngLon[j]
+    }
+}
+
 function updateMapSize() {
     OLMap.updateSize();
 }
@@ -3299,11 +3524,16 @@ function getFlightAwareModeSLink(code, ident, linkText) {
             linkText = "FlightAware: " + code.toUpperCase();
         }
 
-        let linkHtml = "<a target=\"_blank\" href=\"https://flightaware.com/live/modes/" + code ;
+        // Change this link to look on FR24 for data!
+
+        //let linkHtml = "<a target=\"_blank\" href=\"https://flightaware.com/live/modes/" + code ;
+        let linkHtml = "<a target=\"_blank\" href=\"https://flightradar24.com/";
         if (ident != null && ident !== "") {
-            linkHtml += "/ident/" + ident.trim();
+//            linkHtml += "/ident/" + ident.trim();
+            linkHtml += ident.trim();
         }
-        linkHtml += "/redirect\">" + linkText + "</a>";
+        //linkHtml += "/redirect\">" + linkText + "</a>";
+        linkHtml += ">" + linkText + "</a>";
         return linkHtml;
     }
 
