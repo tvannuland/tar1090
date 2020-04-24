@@ -98,6 +98,11 @@ function PlaneObject(icao) {
     this.markerSvgKey = null;
     this.baseScale = 1;
 
+    // Needed for Max Range Plot feature
+	this.siteBearing    = 0  ;
+	this.siteNm	    = 0  ;
+	this.fl  	    = 0  ;
+
     // start from a computed registration, let the DB override it
     // if it has something else.
     this.registration = registration_from_hexid(this.icao);
@@ -1426,6 +1431,47 @@ PlaneObject.prototype.updateFeatures = function(now, last, redraw) {
                 selectPlaneByHex(null,false);
         }
     }
+
+    // store range plot details
+    if (MaxRngRange[this.siteBearing] < this.siteNm && this.siteNm < MaxRangeLikely) {
+        MaxRngRange[this.siteBearing] = this.siteNm;
+        MaxRngLat[this.siteBearing] = this.position[1];
+        MaxRngLon[this.siteBearing] = this.position[0];
+        localStorage.setItem("MaxRngRange", JSON.stringify(MaxRngRange));
+        localStorage.setItem("MaxRngLat", JSON.stringify(MaxRngLat));
+        localStorage.setItem("MaxRngLon", JSON.stringify(MaxRngLon));
+        if (SleafordMySql && this.siteNm > MinRangeLikely) { // 120) { 
+            // Store this in mySql so I will always have max ranges
+            updateMySql("max", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
+        }
+    };
+    if (this.altitude <= MidRangeHeight && MidRangeHeight > 0) {
+        if (MidRngRange[this.siteBearing] < this.siteNm && this.siteNm < MidRangeLikely) {
+            MidRngRange[this.siteBearing] = this.siteNm;
+            MidRngLat[this.siteBearing] = this.position[1];
+            MidRngLon[this.siteBearing] = this.position[0];
+            localStorage.setItem("MidRngRange", JSON.stringify(MidRngRange));
+            localStorage.setItem("MidRngLat", JSON.stringify(MidRngLat));
+            localStorage.setItem("MidRngLon", JSON.stringify(MidRngLon));
+            if (SleafordMySql && this.siteNm < MidRangeLikely) { //200) {  
+                updateMySql("mid", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
+            }
+        }
+    };
+    if (this.altitude <= MinRangeHeight && MinRangeHeight > 0) {
+        if (MinRngRange[this.siteBearing] < this.siteNm && this.siteNm < MinRangeLikely) {
+            MinRngRange[this.siteBearing] = this.siteNm;
+            MinRngLat[this.siteBearing] = this.position[1];
+            MinRngLon[this.siteBearing] = this.position[0];
+            localStorage.setItem("MinRngRange", JSON.stringify(MinRngRange));
+            localStorage.setItem("MinRngLat", JSON.stringify(MinRngLat));
+            localStorage.setItem("MinRngLon", JSON.stringify(MinRngLon));
+            if (SleafordMySql && this.siteNm < MinRangeLikely) { // 150) { 
+                updateMySql("min", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
+            }
+        }
+    };
+    
     this.updated = false;
 };
 
@@ -1822,6 +1868,14 @@ PlaneObject.prototype.drawRedDot = function(bad_position) {
     this.trail_features.addFeature(lineFeat);
 }
 
+function radians(n) {
+    return n * (Math.PI / 180);
+}
+
+function degrees(n) {
+    return n * (180 / Math.PI);
+}
+  
 /**
  * Converts an HSL color value to RGB. Conversion formula
  * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
@@ -1876,6 +1930,7 @@ PlaneObject.prototype.altBad = function(newAlt, oldAlt, oldTime, data) {
     const fpm = (delta < 800) ? 0 : (60 * delta / (now - oldTime + 2));
     return fpm > max_fpm;
 }
+
 PlaneObject.prototype.getAircraftData = function() {
     let req = getAircraftData(this.icao);
 
@@ -2250,4 +2305,26 @@ PlaneObject.prototype.setNull = function() {
     this.msgs978   = 0;
     this.messageRate = 0;
     this.messageRateOld = 0;
+}
+
+function updateMySql(ring, bearing, dist, lat, lon, icao, fl) {
+    icao = icao.toUpperCase();
+    ring = ring.toUpperCase();
+    var date = new Date();
+
+    //if (dist >100) console.log(bearing+" "+dist+" "+icao+" "+fl); // Debug purposes
+    if (bearing === 360) bearing = 0;
+
+    $(function () {
+        $.ajax({
+            url: 'sql/range_update_one.php',
+            async: true,
+            data: "ring=" + ring + "&bearing=" + bearing + "&range=" + dist + "&lat=" + lat + "&lon=" + lon + "&icao=" + icao + "&fltlvl=" + fl,
+            dataType: 'json',
+            success: function (retData) {
+                //console.log(ring+" "+retData); // true or false (success/failure)
+                //console.log( retData); // true or false (success/failure)
+            }
+        });
+    });
 }
