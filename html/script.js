@@ -109,6 +109,18 @@ var MinRngRange = [];
 var MinRngLat   = [];
 var MinRngLon   = [];
 
+// Define Max Range Plot feature stuff (TvN). Mostly copied from Alkissack's OpenLayers implementation
+var MaxRangeFeatures      = new ol.Collection();	// MAX Range Plot feature
+var MaxRngRange = [];
+var MaxRngLat   = [];
+var MaxRngLon   = [];
+var MidRngRange = [];
+var MidRngLat   = [];
+var MidRngLon   = [];
+var MinRngRange = [];
+var MinRngLat   = [];
+var MinRngLon   = [];
+
 let shareLink = '';
 
 let onMobile = false;
