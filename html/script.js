@@ -1310,18 +1310,21 @@ function initialize_map() {
         //renderOrder: null,
     });
 
-    if (ShowMaxRange) {    // Maximum Range Plot
-        var maxRangeLayer = new ol.layer.Vector({
+    // Maximum Range Plot
+    layers.push(
+        //maxRangeLayer = new ol.layer.Vector({
+        new ol.layer.Vector({
             name: 'ranges',
             type: 'overlay',
             title: 'Range Plot',
             source: new ol.source.Vector({
                 features: MaxRangeFeatures,
-            })
-        });
-    } else {
-        var maxRangeLayer = new ol.layer.Vector({});
-    };
+            }),
+            visible: showMaxRange,
+            zIndex: 110,
+            renderOrder: null
+        })
+    );
 
     layers.push(
         new ol.layer.Vector({
@@ -1344,7 +1347,7 @@ function initialize_map() {
 
     layers.push(trailLayers);
 
-    layers.push(maxRangeLayer);
+    //layers.push(maxRangeLayer);
 
     layers.push(iconLayer);
 
@@ -1630,6 +1633,9 @@ function initialize_map() {
                 // debug stuff
             case "L":
                 toggleLastLeg();
+                break;
+            case "R":
+                resetRangePlot();
                 break;
             case "D":
                 debug = !debug;
@@ -2170,71 +2176,7 @@ function refreshSelected() {
     setSelectedInfoBlockVisibility();
 
     // Range Plot
-	MaxRangeFeatures.clear();
-
-	// MAXIMUM ------------------------------------
-	var style = new ol.style.Style({
-	    stroke: new ol.style.Stroke({
-	        color: 'rgba(0,0,128, 1)',
-	        width: RangeLine
-	    }),
-	    fill: new ol.style.Fill({
-	        color: 'rgba(0,0,255, 0.05)'
-	    })
-	});
-
-	var polyCoords = [];
-	for (var i=0; i < 360; i++) {
-		polyCoords.push(ol.proj.transform([MaxRngLon[i], MaxRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
-	}
-	var rangeFeature = new ol.Feature({
-	    geometry: new ol.geom.Polygon([polyCoords])
-
-	})
-	rangeFeature.setStyle(style)
-	if(ShowMaxRange) {MaxRangeFeatures.push(rangeFeature)};
-
-	// MEDIUM ------------------------------------
-	var style = new ol.style.Style({
-	    stroke: new ol.style.Stroke({
-	        color: 'rgba(0,128,0, 0.5)',
-	        width: RangeLine
-	    }),
-	    fill: new ol.style.Fill({
-	        color: 'rgba(0,255,0, 0.05)'
-	    })
-	});
-	var polyCoords = [];
-	for (var i=0; i < 360; i++) {
-		polyCoords.push(ol.proj.transform([MidRngLon[i], MidRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
-	}
-	var rangeFeature = new ol.Feature({
-	    geometry: new ol.geom.Polygon([polyCoords])
-
-	})
-	rangeFeature.setStyle(style)
-	if (MidRangeHeight > 0) {MaxRangeFeatures.push(rangeFeature)}; // Medium range
-
-	// MINIMUM ------------------------------------
-	var style = new ol.style.Style({
-	    stroke: new ol.style.Stroke({
-	        color: 'rgba(128,0,0, 0.5)',
-	        width: RangeLine
-	    }),
-	    fill: new ol.style.Fill({
-	        color: 'rgba(255,0,0, 0.05)'
-	    })
-	});
-	var polyCoords = [];
-	for (var i=0; i < 360; i++) {
-		polyCoords.push(ol.proj.transform([MinRngLon[i], MinRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
-	}
-	var rangeFeature = new ol.Feature({
-	    geometry: new ol.geom.Polygon([polyCoords])
-
-	})
-	rangeFeature.setStyle(style)
-	if (MinRangeHeight>0) {MaxRangeFeatures.push(rangeFeature);} // Minimum range
+	drawMaxRangePlot();
 }
 
 function refreshHighlighted() {
@@ -2296,6 +2238,8 @@ function refreshHighlighted() {
 
     $('#highlighted_rssi').text(highlighted.rssi != null ? highlighted.rssi.toFixed(1) + ' dBFS' : "n/a");
 
+    // Range Plot
+	drawMaxRangePlot();
 }
 
 function refreshClock(now_date) {
@@ -2313,6 +2257,10 @@ function refreshFeatures() {
     for (let i in PlanesOrdered) {
         PlanesOrdered[i].updateTick(true);
     }
+
+    // Range Plot
+	drawMaxRangePlot();
+
 }
 
 // Refreshes the larger table of all the planes
@@ -2486,6 +2434,8 @@ function refreshTableInfo() {
     //tbody.appendChild(tableinfoFragment);
     //console.timeEnd("DOM");
     //console.log(tableinfo);
+
+    drawMaxRangePlot();
 }
 
 //
@@ -3533,7 +3483,7 @@ function getFlightAwareModeSLink(code, ident, linkText) {
             linkHtml += ident.trim();
         }
         //linkHtml += "/redirect\">" + linkText + "</a>";
-        linkHtml += ">" + linkText + "</a>";
+        linkHtml += "\">" + linkText + "</a>";
         return linkHtml;
     }
 
@@ -4439,6 +4389,76 @@ function createSiteCircleFeatures() {
         feature.setStyle(circleStyle(distance));
         StaticFeatures.addFeature(feature);
     }
+
+    // Range Plot
+	drawMaxRangePlot();
+}
+
+function drawMaxRangePlot() {
+    MaxRangeFeatures.clear();
+    // MAXIMUM ------------------------------------
+    var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(0,0,128, 1)',
+            width: RangeLine
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(0,0,255, 0.05)'
+        })
+    });
+    var polyCoords = [];
+    for (var i = 0; i < 360; i++) {
+        polyCoords.push(ol.proj.transform([MaxRngLon[i], MaxRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+    }
+    var rangeFeature = new ol.Feature({
+        geometry: new ol.geom.Polygon([polyCoords])
+    });
+    rangeFeature.setStyle(style);
+    if (showMaxRange) {
+        MaxRangeFeatures.push(rangeFeature);
+    }
+    // MEDIUM ------------------------------------
+    var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(0,128,0, 0.5)',
+            width: RangeLine
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(0,255,0, 0.05)'
+        })
+    });
+    var polyCoords = [];
+    for (var i = 0; i < 360; i++) {
+        polyCoords.push(ol.proj.transform([MidRngLon[i], MidRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+    }
+    var rangeFeature = new ol.Feature({
+        geometry: new ol.geom.Polygon([polyCoords])
+    });
+    rangeFeature.setStyle(style);
+    if (MidRangeHeight > 0) {
+        MaxRangeFeatures.push(rangeFeature);
+    } // Medium range
+    // MINIMUM ------------------------------------
+    var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(128,0,0, 0.5)',
+            width: RangeLine
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,0,0, 0.05)'
+        })
+    });
+    var polyCoords = [];
+    for (var i = 0; i < 360; i++) {
+        polyCoords.push(ol.proj.transform([MinRngLon[i], MinRngLat[i]], 'EPSG:4326', 'EPSG:3857'));
+    }
+    var rangeFeature = new ol.Feature({
+        geometry: new ol.geom.Polygon([polyCoords])
+    });
+    rangeFeature.setStyle(style);
+    if (MinRangeHeight > 0) {
+        MaxRangeFeatures.push(rangeFeature);
+    }  // Minimum range    
 }
 
 function drawUpintheair() {
