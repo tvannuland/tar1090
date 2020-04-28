@@ -13,7 +13,7 @@ let disabled = false;
 
 // -- Title Settings --------------------------------------
 // Show number of aircraft and/or messages per second in the page title
-let PlaneCountInTitle = false;
+let PlaneCountInTitle = true;
 let MessageRateInTitle = false;
 
 // -- Output Settings -------------------------------------
@@ -169,6 +169,15 @@ let SiteCircles = true; // true to show circles (only shown if the center marker
 // In miles, nautical miles, or km (depending settings value 'DisplayUnits')
 let SiteCirclesDistances = new Array(100,150,200);
 
+//These are the options to show max range plot
+let showMaxRange = true; // If showing ranges, set SiteLat/SiteLon as these are the zero range positions till plot is drawn
+let MinRangeHeight = -1; // ft - inner range ring - Set -1 to disable
+let MinRangeLikely = 170; // nm - practical max (to supress spikes from bad data)
+let MidRangeHeight = -1; // ft - mid range ring - Set -1 to disable
+let MidRangeLikely = 220; // nm - practical max
+let MaxRangeLikely = 300; // nm - practical max
+let RangeLine = 1; // Line width for range rings
+
 // Controls page title, righthand pane when nothing is selected
 let PageName = "tar1090";
 
@@ -210,7 +219,7 @@ let uatNoTISB = true;
 // Don't display any TIS-B planes
 let filterTISB = false;
 
-let flightawareLinks = false;
+let flightawareLinks = true;
 
 // Filter implausible positions (required speed > Mach 2.5)
 // valid values: true, false, "onlyMLAT" ("" required)
@@ -239,16 +248,16 @@ let HideCols = [
 	"#icao",
 //	"#flag",
 //	"#flight",
-	"#registration",
+//	"#registration",
 //	"#aircraft_type",
 //	"#squawk",
 //	"#altitude",
-//	"#speed",
+	"#speed",
 	"#vert_rate",
 //	"#distance",
 	"#track",
-	"#msgs",
-	"#seen",
+//	"#msgs",
+//	"#seen",
 //	"#rssi",
 	"#lat",
 	"#lon",
