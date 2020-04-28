@@ -1349,6 +1349,45 @@ PlaneObject.prototype.updateData = function(now, last, data, init) {
         }
     }
 
+    // When SitePosition defined, store a bearing and nm distance for our range plot
+    if ((SitePosition !== null) && (this.position !== null)) {
+        //var WGS84 = new ol.Sphere(6378137);
+        //this.sitedist = ol.sphere.WGS84.haversineDistance(SitePosition, this.position);
+        this.sitedist = ol.sphere.getDistance(SitePosition, this.position); // New ol implementation. Third argument can be radius, default is WGS84 earth radius
+        this.siteBearing = parseInt(getBearing(SitePosition[1], SitePosition[0], this.position[1], this.position[0]).toFixed(0));
+        this.siteNm = parseInt((this.sitedist / 1852).toFixed(0));
+    }
+
+    // store range plot details
+    if (MaxRngRange[this.siteBearing] < this.siteNm && this.siteNm < MaxRangeLikely) {
+        MaxRngRange[this.siteBearing] = this.siteNm;
+        MaxRngLat[this.siteBearing] = this.position[1];
+        MaxRngLon[this.siteBearing] = this.position[0];
+        localStorage.setItem("MaxRngRange", JSON.stringify(MaxRngRange));
+        localStorage.setItem("MaxRngLat", JSON.stringify(MaxRngLat));
+        localStorage.setItem("MaxRngLon", JSON.stringify(MaxRngLon));
+    };
+    if (this.altitude <= MidRangeHeight && MidRangeHeight > 0) {
+        if (MidRngRange[this.siteBearing] < this.siteNm && this.siteNm < MidRangeLikely) {
+            MidRngRange[this.siteBearing] = this.siteNm;
+            MidRngLat[this.siteBearing] = this.position[1];
+            MidRngLon[this.siteBearing] = this.position[0];
+            localStorage.setItem("MidRngRange", JSON.stringify(MidRngRange));
+            localStorage.setItem("MidRngLat", JSON.stringify(MidRngLat));
+            localStorage.setItem("MidRngLon", JSON.stringify(MidRngLon));
+        }
+    };
+    if (this.altitude <= MinRangeHeight && MinRangeHeight > 0) {
+        if (MinRngRange[this.siteBearing] < this.siteNm && this.siteNm < MinRangeLikely) {
+            MinRngRange[this.siteBearing] = this.siteNm;
+            MinRngLat[this.siteBearing] = this.position[1];
+            MinRngLon[this.siteBearing] = this.position[0];
+            localStorage.setItem("MinRngRange", JSON.stringify(MinRngRange));
+            localStorage.setItem("MinRngLat", JSON.stringify(MinRngLat));
+            localStorage.setItem("MinRngLon", JSON.stringify(MinRngLon));
+        }
+    };
+    
     this.last = now;
 };
 
@@ -1432,46 +1471,6 @@ PlaneObject.prototype.updateFeatures = function(now, last, redraw) {
         }
     }
 
-    // store range plot details
-    if (MaxRngRange[this.siteBearing] < this.siteNm && this.siteNm < MaxRangeLikely) {
-        MaxRngRange[this.siteBearing] = this.siteNm;
-        MaxRngLat[this.siteBearing] = this.position[1];
-        MaxRngLon[this.siteBearing] = this.position[0];
-        localStorage.setItem("MaxRngRange", JSON.stringify(MaxRngRange));
-        localStorage.setItem("MaxRngLat", JSON.stringify(MaxRngLat));
-        localStorage.setItem("MaxRngLon", JSON.stringify(MaxRngLon));
-        if (SleafordMySql && this.siteNm > MinRangeLikely) { // 120) { 
-            // Store this in mySql so I will always have max ranges
-            updateMySql("max", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
-        }
-    };
-    if (this.altitude <= MidRangeHeight && MidRangeHeight > 0) {
-        if (MidRngRange[this.siteBearing] < this.siteNm && this.siteNm < MidRangeLikely) {
-            MidRngRange[this.siteBearing] = this.siteNm;
-            MidRngLat[this.siteBearing] = this.position[1];
-            MidRngLon[this.siteBearing] = this.position[0];
-            localStorage.setItem("MidRngRange", JSON.stringify(MidRngRange));
-            localStorage.setItem("MidRngLat", JSON.stringify(MidRngLat));
-            localStorage.setItem("MidRngLon", JSON.stringify(MidRngLon));
-            if (SleafordMySql && this.siteNm < MidRangeLikely) { //200) {  
-                updateMySql("mid", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
-            }
-        }
-    };
-    if (this.altitude <= MinRangeHeight && MinRangeHeight > 0) {
-        if (MinRngRange[this.siteBearing] < this.siteNm && this.siteNm < MinRangeLikely) {
-            MinRngRange[this.siteBearing] = this.siteNm;
-            MinRngLat[this.siteBearing] = this.position[1];
-            MinRngLon[this.siteBearing] = this.position[0];
-            localStorage.setItem("MinRngRange", JSON.stringify(MinRngRange));
-            localStorage.setItem("MinRngLat", JSON.stringify(MinRngLat));
-            localStorage.setItem("MinRngLon", JSON.stringify(MinRngLon));
-            if (SleafordMySql && this.siteNm < MinRangeLikely) { // 150) { 
-                updateMySql("min", this.siteBearing, this.siteNm, this.position[1], this.position[0], this.icao, this.fl);
-            }
-        }
-    };
-    
     this.updated = false;
 };
 
@@ -1875,7 +1874,26 @@ function radians(n) {
 function degrees(n) {
     return n * (180 / Math.PI);
 }
-  
+
+function getBearing(startLat, startLong, endLat, endLong) {
+    startLat = radians(startLat);
+    startLong = radians(startLong);
+    endLat = radians(endLat);
+    endLong = radians(endLong);
+
+    var dLong = endLong - startLong;
+
+    var dPhi = Math.log(Math.tan(endLat / 2.0 + Math.PI / 4.0) / Math.tan(startLat / 2.0 + Math.PI / 4.0));
+    if (Math.abs(dLong) > Math.PI) {
+        if (dLong > 0.0)
+            dLong = -(2.0 * Math.PI - dLong);
+        else
+            dLong = (2.0 * Math.PI + dLong);
+    }
+
+    return (degrees(Math.atan2(dLong, dPhi)) + 360.0) % 360.0;
+}
+
 /**
  * Converts an HSL color value to RGB. Conversion formula
  * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
