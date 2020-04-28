@@ -25,21 +25,29 @@
 //DefaultCenterLat = 45.0;
 //DefaultCenterLon = 9.0;
 // The google maps zoom level, 0 - 16, lower is further out
-//DefaultZoomLvl   = 7;
+// DefaultZoomLvl   = 7;
 
 // Center marker. If dump1090 provides a receiver location,
 // that location is used and these settings are ignored.
 
-//SiteShow    = false;           // true to show a center marker
-//SiteLat     = 45.0;            // position of the marker
-//SiteLon     = 9.0;
-//SiteName    = "My Radar Site"; // tooltip of the marker
+// SiteShow    = true;           // true to show a center marker
+// SiteLat     = 50.04;            // position of the marker, currently set to EDDF/FRA
+// SiteLon     = 8.56;
+// SiteName    = "My Radar Site"; // tooltip of the marker
 
 // Color controls for the range outline
 //range_outline_color = '#0000DD';
 //range_outline_width = 1.7;
 //range_outline_colored_by_altitude = false;
 
+// These are the options to show max range plot
+// showMaxRange = true; // If showing ranges, set SiteLat/SiteLon as these are the zero range positions till plot is drawn
+// MinRangeHeight = -1; // ft - inner range ring - Set -1 to disable
+// MinRangeLikely = 170; // nm - practical max (to supress spikes from bad data)
+// MidRangeHeight = -1; // ft - mid range ring - Set -1 to disable
+// MidRangeLikely = 220; // nm - practical max
+// MaxRangeLikely = 300; // nm - practical max
+// RangeLine = 1; // Line width for range rings
 
 // which map is displayed to new visitors
 // MapType_tar1090 = "carto_light_all";
@@ -131,7 +139,7 @@ ColorByAlt = {
 
 	// Changes added to the color of planes that have stale position info
 	stale :    { h: 0, s: -10, l: +30 },
-
+	
 	// Changes added to the color of planes that have positions from mlat
 	mlat :     { h: 0, s: -10, l: -10 }
 };
@@ -140,35 +148,35 @@ ColorByAlt = {
 
 // For a monochrome display try this:
 // ColorByAlt = {
-//         unknown :  { h: 0, s: 0, l: 40 },
-//         ground  :  { h: 0, s: 0, l: 30 },
-//         air :      { h: [ { alt: 0, val: 0 } ], s: 0, l: 50 },
-//         selected : { h: 0, s: 0, l: +30 },
-//         stale :    { h: 0, s: 0, l: +30 },
-//         mlat :     { h: 0, s: 0, l: -10 }
-// };
-
-// Range rings
-
-// Also called range rings :)
-//SiteCircles = true; // true to show circles (only shown if the center marker is shown)
-// In miles, nautical miles, or km (depending settings value 'DisplayUnits')
-//SiteCirclesDistances = new Array(100,150,200,250);
-
-// Controls page title, righthand pane when nothing is selected
-//PageName = "tar1090";
-
-// Show country flags by ICAO addresses?
-//ShowFlags = true;
-
-// Set to false to disable the ChartBundle base layers (US coverage only)
-//ChartBundleLayers = true;
-
-// Provide a Bing Maps API key here to enable the Bing imagery layer.
-// You can obtain a free key (with usage limits) at
-// https://www.bingmapsportal.com/ (you need a "basic key")
-//
-// Be sure to quote your key:
+	//         unknown :  { h: 0, s: 0, l: 40 },
+	//         ground  :  { h: 0, s: 0, l: 30 },
+	//         air :      { h: [ { alt: 0, val: 0 } ], s: 0, l: 50 },
+	//         selected : { h: 0, s: 0, l: +30 },
+	//         stale :    { h: 0, s: 0, l: +30 },
+	//         mlat :     { h: 0, s: 0, l: -10 }
+	// };
+	
+	// Range rings
+	
+	// Also called range rings :)
+	//SiteCircles = true; // true to show circles (only shown if the center marker is shown)
+	// In miles, nautical miles, or km (depending settings value 'DisplayUnits')
+	//SiteCirclesDistances = new Array(100,150,200,250);
+	
+	// Controls page title, righthand pane when nothing is selected
+	//PageName = "tar1090";
+	
+	// Show country flags by ICAO addresses?
+	//ShowFlags = true;
+	
+	// Set to false to disable the ChartBundle base layers (US coverage only)
+	//ChartBundleLayers = true;
+	
+	// Provide a Bing Maps API key here to enable the Bing imagery layer.
+	// You can obtain a free key (with usage limits) at
+	// https://www.bingmapsportal.com/ (you need a "basic key")
+	//
+	// Be sure to quote your key:
 //   BingMapsAPIKey = "your key here";
 //
 BingMapsAPIKey = null;
@@ -217,7 +225,7 @@ HideCols = [
 	"#icao",
 //	"#flag",
 //	"#flight",
-	"#registration",
+//	"#registration",
 //	"#aircraft_type",
 //	"#squawk",
 //	"#altitude",
@@ -225,13 +233,13 @@ HideCols = [
 	"#vert_rate",
 //	"#distance",
 	"#track",
-	"#msgs",
-	"#seen",
+//	"#msgs",
+//	"#seen",
 //	"#rssi",
 	"#lat",
 	"#lon",
 	"#data_source",
-]
+];
 
 
 //enableDWD = true;
@@ -241,12 +249,3 @@ HideCols = [
 //
 //hideButtons = false;
 
-//These are the options to show max range plot
-ShowMaxRange         = true ;  // https://github.com/alkissack/Dump1090-OpenLayers3-html/wiki/8.-Maximum-range-plot
-			       // If showing ranges, set SiteLat/SiteLon as these are the zero range positions till plot is drawn
-MinRangeHeight	     =    -1 ; // ft - inner range ring - Set -1 to disable
-MinRangeLikely 	     =   170 ; // nm - practical max (to supress spikes from bad data)
-MidRangeHeight	     =    -1 ; // ft - mid range ring - Set -1 to disable
-MidRangeLikely 	     =   220 ; // nm - practical max
-MaxRangeLikely 	     =   300 ; // nm - practical max
-RangeLine	  			   =     1 ; // Line width for range rings
